@@ -86,19 +86,19 @@ const beastSaberMapKey = (songHashData: any, beatSaverMapID: string) => {
  */
 const main = async () => {
     // Processing command line arguments for username and Beat Saber directory
-    const usernameFlagIndex = process.argv.indexOf('--username');
+    const usernameFlagIndex = process.argv.indexOf('--windows-username');
     const username = usernameFlagIndex !== -1 ? process.argv[usernameFlagIndex + 1] : undefined;
-    const beatSaberDirectoryFlagIndex = process.argv.indexOf('--beatsaber-dir');
-    let beatSaberDirectory = beatSaberDirectoryFlagIndex !== -1 ? process.argv[beatSaberDirectoryFlagIndex + 1] : undefined;
+    let beatSaberDirectories:string[] = [];// = beatSaberDirectoryFlagIndex !== -1 ? process.argv[beatSaberDirectoryFlagIndex + 1] : undefined;
 
-    // Attempting to read the Beat Saber directory from a file if not provided via command line
-    if (!beatSaberDirectory) {
-        try {
-            beatSaberDirectory = fs.readFileSync('./secrets/beat_saber_dir', 'utf8');
-        } catch (err) { 
-            console.error('Please provide the path to the Beat Saber directory using the --beatsaber-dir flag or set beat saber path in /info/beat_saber_dir file.');
-            return;
+    try {
+        for (const dir of fs.readFileSync('./secrets/beat_saber_dir', 'utf8').split('\r\n')) { 
+            if (dir !== '') {
+                beatSaberDirectories.push(dir);
+            }
         }
+    } catch (err) { 
+        console.error('Please provide the path(s) to the Beat Saber directory(s) by setting /secrets/beat_saber_dir file.');
+        return;
     }
 
     // Attempting to read Beast Saber login credentials from files
@@ -108,7 +108,7 @@ const main = async () => {
         beastSaberUsername = fs.readFileSync('./secrets/beast_saber_username', 'utf8');
         beastSaberPassword = fs.readFileSync('./secrets/beast_saber_password', 'utf8');
     } catch (err) {
-        console.error('Please provide the Beast Saber username and password in the /info/beast_saber_username and /info/beast_saber_password files.');
+        console.error('Please provide the Beast Saber username and password in the /secrets/beast_saber_username and /secrets/beast_saber_password files.');
         return;
     }
 
@@ -122,31 +122,46 @@ const main = async () => {
     // Constructing file paths and reading player and song hash data
     const homeDirectory = getHomeDirectory(username);
     const playerDataFilePath = path.join(homeDirectory, 'AppData\\LocalLow\\Hyperbolic Magnetism\\Beat Saber\\PlayerData.dat');
-    const songHashDataFilePath = path.join(beatSaberDirectory, 'UserData\\SongCore\\SongHashData.dat');
 
+    console.log(beatSaberDirectories)
 
-    const playerData = await readDataFromFile(playerDataFilePath);
-    const songHashData = await readDataFromFile(songHashDataFilePath);
+    let songHashDataFilePaths:string[] = [];
 
-    // Iterating over the player's favorite levels, bookmarking any not already bookmarked
-    for (const levelId of playerData.localPlayers[0].favoritesLevelIds) {
-        let bSaberMapKey = beastSaberMapKey(songHashData, beatSaverMapID(levelId));
-        if (bSaberMapKey !== 'Not Found') {
-            let map = await bsapi.getMapByKey(bSaberMapKey);
-            if (map) {
-                if (userBookmarkIds.includes(map.id)) {
-                    continue;
+    for (const dir of beatSaberDirectories) {
+        songHashDataFilePaths.push(path.join(dir, 'UserData\\SongCore\\SongHashData.dat'));
+    }
+
+    const playerDataFile = await readDataFromFile(playerDataFilePath);
+
+    const bookmarkedMaps:number[] = [];
+
+    for (const songHashDataFilePath of songHashDataFilePaths) {
+        console.log(`Reading song hash data from ${songHashDataFilePath}...`);
+        const songHashData = await readDataFromFile(songHashDataFilePath);
+
+        // Iterating over the player's favorite levels, bookmarking any not already bookmarked
+        for (const levelId of playerDataFile.localPlayers[0].favoritesLevelIds) {
+            let bSaberMapKey = beastSaberMapKey(songHashData, beatSaverMapID(levelId));
+            if (bSaberMapKey !== 'Not Found') {
+                try {
+                    let map = await bsapi.getMapByKey(bSaberMapKey);
+                    if (!map) continue;
+                    if (!bookmarkedMaps.includes(map.id)) {
+                        if (userBookmarkIds.includes(map.id)) {
+                            continue;
+                        }
+                        let success = await bsapi.bookmarkAdd(map.id);
+                        if (!success) {
+                            console.error(`Failed to add map ${map.title} to Beast Saber bookmarks.`);
+                        } else {
+                            console.log(`Map ${map.title} added to Beast Saber bookmarks.`);
+                            bookmarkedMaps.push(map.id);
+                        }
+                    }
+                } catch (err) { 
+                    // Results in MapNotFoundError if map is not found on beast saber
+                    console.log(`Map with key ${bSaberMapKey} not found on Beast Saber.`);
                 }
-                let success = await bsapi.bookmarkAdd(map.id);
-                if (!success) {
-                    console.error(`Failed to add map ${map.title} to Beast Saber bookmarks.`);
-                    continue;
-                } else {
-                    console.log(`Map ${map.title} added to Beast Saber bookmarks.`);
-                }
-                continue;
-            } else {
-                console.log(`Map with key ${bSaberMapKey} found on Beast Saber.`);
             }
         }
     }

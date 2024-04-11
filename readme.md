@@ -17,10 +17,10 @@ This repo contains code whose purpose is to take all of the levels you have favo
 npm install
 ```
 
-- Run script with command:
+- Run script with run script:
 
 ```bash
-npx ts-node .\script.ts
+./run.bat
 ```
 
 And as long as all your information is correct, the beast saber api should add all of your favorited levels within beat saber to the bookmarks for your beast saber account.
