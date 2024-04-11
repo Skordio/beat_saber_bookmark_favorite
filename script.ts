@@ -66,31 +66,54 @@ const main = async () => {
         }
     }
 
+    let beastSaberUsername;
+    let beastSaberPassword;
+
+    try {
+        beastSaberUsername = fs.readFileSync('./secrets/beast_saber_username', 'utf8');
+        beastSaberPassword = fs.readFileSync('./secrets/beast_saber_password', 'utf8');
+    } catch (err) {
+        console.error('Please provide the Beast Saber username and password in the /info/beast_saber_username and /info/beast_saber_password files.');
+        return;
+    }
+
+    const cookies = await bsapi.login(beastSaberUsername, beastSaberPassword);
+    console.log(`User ${beastSaberUsername} is logged in: ${await bsapi.isLoggedIn()}`)
+
+    const userBookmarks = await bsapi.getBookmarkedBy(beastSaberUsername);
+    const userBookmarkIds = userBookmarks.maps.map((map) => map.id);
+
+
     const homeDirectory = getHomeDirectory(username);
     const playerDataFilePath = path.join(homeDirectory, 'AppData\\LocalLow\\Hyperbolic Magnetism\\Beat Saber\\PlayerData.dat');
     const songHashDataFilePath = path.join(beatSaberDirectory, 'UserData\\SongCore\\SongHashData.dat');
 
-    // console.log(songHashDataFilePath)
 
     const playerData = await readDataFromFile(playerDataFilePath);
     const songHashData = await readDataFromFile(songHashDataFilePath);
 
-    // console.log(playerData.localPlayers[0].favoritesLevelIds)
     
     for (const levelId of playerData.localPlayers[0].favoritesLevelIds) {
         let bSaberMapKey = beastSaberMapKey(songHashData, beatSaverMapID(levelId));
         if (bSaberMapKey !== 'Not Found') {
-            console.log(bSaberMapKey);
-            break;
+            let map = await bsapi.getMapByKey(bSaberMapKey);
+            if (map) {
+                if (userBookmarkIds.includes(map.id)) {
+                    continue;
+                }
+                let success = await bsapi.bookmarkAdd(map.id);
+                if (!success) {
+                    console.error(`Failed to add map ${map.title} to Beast Saber bookmarks.`);
+                    continue;
+                } else {
+                    console.log(`Map ${map.title} added to Beast Saber bookmarks.`);
+                }
+                continue;
+            } else {
+                console.log(`Map with key ${bSaberMapKey} found on Beast Saber.`);
+            }
         }
     }
-    // let mapId = beatSaverMapID(playerData.localPlayers[0].favoritesLevelIds[0])
-    // let bSaberMapKey = beastSaberMapKey(songHashData, mapId);
-    
-    // console.log(bSaberMapKey);
-    // let map = await bsapi.getMapByKey('1dd');
-    
-    // console.log(map);
 };
 
 main();
