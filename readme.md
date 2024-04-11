@@ -4,9 +4,9 @@ This repo contains code whose purpose is to take all of the levels you have favo
 
 ## Secrets
 
-- Put just your beastsaber username into a file at ./secret/beast_saber_username
-- Put just your beastsaber password into a file at ./secret/beast_saber_password
-- Put just the beat saber directory where the custom songs are installed into a file at ./secret/beat_saber_dir
+- Put just your beastsaber username into the file ./secret/beast_saber_username
+- Put just your beastsaber password into the file ./secret/beast_saber_password
+- Put just the beat saber directory where the custom songs are installed into the file ./secret/beat_saber_dir
 
 ## To use
 
