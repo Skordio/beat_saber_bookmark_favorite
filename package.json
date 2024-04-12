@@ -10,9 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "beastsaber-api": "^2.2.1",
-    "ts-node": "^10.9.2",
     "@types/node": "^20.12.7",
+    "beastsaber-api": "^2.2.1",
+    "open": "^10.1.0",
+    "ts-node": "^10.9.2",
     "typescript": "^5.4.5"
   }
 }

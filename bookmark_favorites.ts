@@ -96,7 +96,7 @@ const main = async () => {
                 beatSaberDirectories.push(dir);
             }
         }
-    } catch (err) { 
+    } catch (err) {
         console.error('Please provide the path(s) to the Beat Saber directory(s) by setting /secrets/beat_saber_dir file.');
         return;
     }
@@ -116,14 +116,10 @@ const main = async () => {
     const cookies = await bsapi.login(beastSaberUsername, beastSaberPassword);
     console.log(`User ${beastSaberUsername} is logged in: ${await bsapi.isLoggedIn()}`)
 
-    const userBookmarks = await bsapi.getBookmarkedBy(beastSaberUsername);
-    const userBookmarkIds = userBookmarks.maps.map((map) => map.id);
 
     // Constructing file paths and reading player and song hash data
     const homeDirectory = getHomeDirectory(username);
     const playerDataFilePath = path.join(homeDirectory, 'AppData\\LocalLow\\Hyperbolic Magnetism\\Beat Saber\\PlayerData.dat');
-
-    console.log(beatSaberDirectories)
 
     let songHashDataFilePaths:string[] = [];
 
@@ -133,7 +129,7 @@ const main = async () => {
 
     const playerDataFile = await readDataFromFile(playerDataFilePath);
 
-    const bookmarkedMaps:number[] = [];
+    const alreadyBookmarkedMaps:number[] = [];
 
     for (const songHashDataFilePath of songHashDataFilePaths) {
         console.log(`Reading song hash data from ${songHashDataFilePath}...`);
@@ -146,16 +142,13 @@ const main = async () => {
                 try {
                     let map = await bsapi.getMapByKey(bSaberMapKey);
                     if (!map) continue;
-                    if (!bookmarkedMaps.includes(map.id)) {
-                        if (userBookmarkIds.includes(map.id)) {
-                            continue;
-                        }
+                    if (!alreadyBookmarkedMaps.includes(map.id)) {
                         let success = await bsapi.bookmarkAdd(map.id);
                         if (!success) {
                             console.error(`Failed to add map ${map.title} to Beast Saber bookmarks.`);
                         } else {
                             console.log(`Map ${map.title} added to Beast Saber bookmarks.`);
-                            bookmarkedMaps.push(map.id);
+                            alreadyBookmarkedMaps.push(map.id);
                         }
                     }
                 } catch (err) { 
