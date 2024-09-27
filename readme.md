@@ -1,3 +1,8 @@
+# UPDATE: No longer operational
+
+This Repo no longer functions after Beastsaber changed their site and disabled their API. Rest in peace
+
+
 # Purpose
 
 This repo contains code whose purpose is to take all of the levels you have favorited in your PC's beat saber and add those to your BeastSaber bookmarks.
@@ -20,7 +25,7 @@ npm install
 - Run script with run script:
 
 ```bash
-./run.bat
+./bookmark_favorites.bat
 ```
 
 And as long as all your information is correct, the beast saber api should add all of your favorited levels within beat saber to the bookmarks for your beast saber account.
